@@ -228,7 +228,7 @@ const ContentConditionsSelector = (props) => {
                   type: "button",
                   /* onClick={...} */
                   onClick: () => {
-                    const newConditions = { ...conditions };
+                    const newConditions = { ...contentConditions };
                     delete newConditions[condition];
                     setContentConditions(newConditions);
                   }
