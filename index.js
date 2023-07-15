@@ -5,8 +5,13 @@ const DEFAULT_CONDITIONS = {
   "url:mastodon": true,
   "url:mstdn": true,
   "url:misskey": true,
-  "url:nijimiss": true,
-  "url:threads": true,
+  "url:nijimiss.moe": true,
+  "url:submarin.online": true,
+  "url:threads.net": false,
+  "url:bsky.app": false,
+  "url:nostr.directory": false,
+  "url:damus.io": false,
+  "npub": false,
 };
 
 function generateSearchURL(options = {}) {
