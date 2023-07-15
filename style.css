@@ -1,0 +1,28 @@
+h1 .subtitle {
+  font-size: 0.5em;
+}
+
+a.search {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2em;
+  min-width: 5em;
+
+  border: 1px solid gray;
+  background-color: #496feb;
+  border-radius: 2px;
+
+  text-decoration: none;
+  font-weight: bold;
+  color: white;
+}
+a.search:hover {
+  background-color: #042cb2;
+}
+
+ul.lists, ul.conditions {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
