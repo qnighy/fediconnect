@@ -4,6 +4,7 @@ import { createRoot } from "https://jspm.dev/react-dom/client";
 const DEFAULT_CONDITIONS = {
   "url:mastodon": true,
   "url:mstdn": true,
+  "url:fedibird.com": true,
   "url:misskey": true,
   "url:nijimiss.moe": true,
   "url:submarin.online": true,
