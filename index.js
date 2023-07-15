@@ -1,12 +1,18 @@
 import { createElement, useEffect, useState, useSyncExternalStore, Fragment } from "https://jspm.dev/react";
 import { createRoot } from "https://jspm.dev/react-dom/client";
 
-const DEFAULT_CONDITIONS = ["url:mastodon", "url:mstdn", "url:misskey", "url:nijimiss", "url:threads"];
+const DEFAULT_CONDITIONS = {
+  "url:mastodon": true,
+  "url:mstdn": true,
+  "url:misskey": true,
+  "url:nijimiss": true,
+  "url:threads": true,
+};
 
 function generateSearchURL(options = {}) {
   const { queryBase, contentConditions } = options;
 
-  const searchQuery = `${queryBase} ${Object.keys(contentConditions).join(" OR ")}`;
+  const searchQuery = `${queryBase} ${Object.keys(contentConditions).filter((condition) => contentConditions[condition]).join(" OR ")}`;
 
   const url = new URL("https://twitter.com/search");
   url.searchParams.set("q", searchQuery);
@@ -15,7 +21,8 @@ function generateSearchURL(options = {}) {
 
 const App = () => {
   const [queryBase, setQueryBase] = useState("filter:follows");
-  const [contentConditions, setContentConditions] = useState(() => parseConditions(localStorage.getItem("conditions")));
+  const conditionsJson = useStorage("conditions");
+  const contentConditions = parseConditions(conditionsJson);
   const searchURL = generateSearchURL({ queryBase, contentConditions });
   return (
     /* <> */
@@ -175,8 +182,6 @@ const QueryBaseSelector = (props) => {
 };
 
 const ContentConditionsSelector = (props) => {
-  const additionalCandidatesJson = useStorage("conditions");
-  const conditionCandidates = parseConditions(additionalCandidatesJson);
   const { contentConditions, setContentConditions } = props;
   const [addingConditionType, setAddingConditionType] = useState(null);
   const [addingCondition, setAddingCondition] = useState("");
@@ -190,7 +195,7 @@ const ContentConditionsSelector = (props) => {
       /* </summary> */
       /* <ul className="conditions"> */
       createElement("ul", { className: "conditions" },
-        ...Object.keys(conditionCandidates).map((condition) =>
+        ...Object.entries(contentConditions).map(([condition, conditionEnabled]) =>
           /* <li key={condition}> */
           createElement("li", { key: condition },
             /* <label> */
@@ -200,7 +205,7 @@ const ContentConditionsSelector = (props) => {
                 /* type="checkbox" */
                 type: "checkbox",
                 /* checked={hasOwn(contentConditions, condition)} */
-                checked: hasOwn(contentConditions, condition) && contentConditions[condition],
+                checked: conditionEnabled,
                 /* onChange={...} */
                 onChange: (e) => {
                   setContentConditions({
@@ -211,16 +216,16 @@ const ContentConditionsSelector = (props) => {
               }),
               /* /> */
               condition.startsWith("url:") ? `URLに"${condition.slice(4)}"を含む` : `本文に"${condition}"を含む`,
-              DEFAULT_CONDITIONS.includes(condition) ? null :
+              hasOwn(DEFAULT_CONDITIONS, condition) ? null :
                 /* <button */
                 createElement("button", {
                   /* type="button" */
                   type: "button",
                   /* onClick={...} */
                   onClick: () => {
-                    const newConditionCandidates = { ...conditionCandidates };
-                    delete newConditionCandidates[condition];
-                    setStorage("conditions", JSON.stringify(newConditionCandidates));
+                    const newConditions = { ...conditions };
+                    delete newConditions[condition];
+                    setContentConditions(newConditions);
                   }
                 },
                   "削除"
@@ -260,10 +265,6 @@ const ContentConditionsSelector = (props) => {
             onClick: (e) => {
               e.preventDefault();
               const key = addingConditionType === "url" ? `url:${addingCondition}` : addingCondition;
-              setStorage("conditions", JSON.stringify({
-                ...conditionCandidates,
-                [key]: true,
-              }));
               setContentConditions({
                 ...contentConditions,
                 [key]: true,
@@ -302,10 +303,15 @@ const ContentConditionsSelector = (props) => {
 function parseConditions(conditionsJson) {
   const conditionsRaw = JSON.parse(conditionsJson ?? "{}");
   const conditions = {
-    ...Object.fromEntries(DEFAULT_CONDITIONS.map((cond) => [cond, true])),
+    ...Object.fromEntries(Object.entries(DEFAULT_CONDITIONS).map(([cond, defaultEanbled]) =>
+      [cond, hasOwn(conditionsRaw, cond) ? conditionsRaw[cond] : defaultEanbled])),
     ...conditionsRaw,
   };
   return conditions;
+}
+
+function setContentConditions(conditions) {
+  setStorage("conditions", JSON.stringify(conditions));
 }
 
 const useStorage = (name) => {
