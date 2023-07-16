@@ -50,9 +50,9 @@ const DEFAULT_CONDITIONS = {
 };
 
 function generateSearchURL(options = {}) {
-  const { queryBase, contentConditions } = options;
+  const { baseQueries, contentConditions } = options;
 
-  const searchQuery = `${queryBase} ${Object.keys(contentConditions).filter((condition) => contentConditions[condition]).map((query) => workaroundBlockedTLD(query)).join(" OR ")}`;
+  const searchQuery = `${baseQueries.join(" ")} ${Object.keys(contentConditions).filter((condition) => contentConditions[condition]).map((query) => workaroundBlockedTLD(query)).join(" OR ")}`;
 
   const url = new URL("https://twitter.com/search");
   url.searchParams.set("q", searchQuery);
@@ -71,7 +71,16 @@ const App = () => {
   const [queryBase, setQueryBase] = useState("filter:follows");
   const conditionsJson = useStorage("conditions");
   const contentConditions = parseConditions(conditionsJson);
-  const searchURL = generateSearchURL({ queryBase, contentConditions });
+  const usingLastSeen = useStorage("fediconnect_use_last_seen") === "true";
+  const lastSeen = useStorage("fediconnect_last_seen") ?? new Date(Number(new Date()) - 366 * 24 * 60 * 60 * 1000).toISOString();
+  const searchURL = generateSearchURL({
+    baseQueries: [
+      queryBase,
+      usingLastSeen ? `since:${lastSeen.replace("T", "_").replace(/\.\d+/, "").replace(/Z$/, "_UTC")}` : null,
+    ].filter(Boolean),
+    contentConditions,
+  });
+  const [searchTimestamp, setSearchTimestamp] = useState(null);
   return (
     /* <> */
     createElement(Fragment, {},
@@ -79,13 +88,46 @@ const App = () => {
       createElement(QueryBaseSelector, { queryBase, setQueryBase }),
       /* <ContentConditionsSelector contentConditions={contentConditions} setContentConditions={setContentConditions} /> */
       createElement(ContentConditionsSelector, { contentConditions, setContentConditions }),
+      /* <LastSeenSelector usingLastSeen={usingLastSeen} lastSeen={lastSeen} /> */
+      createElement(LastSeenSelector, { usingLastSeen, lastSeen }),
       /* <div> */
       createElement("div", {},
-        /* <a className="search" href={searchURL} target="_blank" rel="noopener noreferrer"> */
-        createElement("a", { className: "search", href: searchURL, target: "_blank", rel: "noopener noreferrer" },
+        /* <a> */
+        createElement("a", {
+          /* className="search" */
+          className: "search",
+          /* href={searchURL} */
+          href: searchURL,
+          /* target="_blank" */
+          target: "_blank",
+          /* rel="noopener noreferrer" */
+          rel: "noopener noreferrer",
+          onClick: () => {
+            if (searchTimestamp == null) {
+              setSearchTimestamp(new Date().toISOString());
+            }
+          }
+        },
           "🔍検索"
-        )
+        ),
         /* </a> */
+        // Show a button to set the last seen date to the current time.
+        searchTimestamp != null
+        ? /* <button */
+          createElement("button", {
+            /* type="button" */
+            type: "button",
+            /* onClick={...} */
+            onClick: () => {
+              setStorage("fediconnect_use_last_seen", "true");
+              setStorage("fediconnect_last_seen", searchTimestamp);
+              setSearchTimestamp(null);
+            }
+          },
+            "日付をフィルタに記録"
+          )
+          /* </button> */
+        : null,
       )
       /* </div> */
     )
@@ -477,6 +519,63 @@ function parseConditions(conditionsJson) {
 function setContentConditions(conditions) {
   setStorage("conditions", JSON.stringify(conditions));
 }
+
+const LastSeenSelector = (props) => {
+  const { usingLastSeen, lastSeen } = props;
+
+  return (
+    /* <details> */
+    createElement("details", {},
+      /* <summary> */
+      createElement("summary", {},
+        "日付フィルタ"
+      ),
+      /* </summary> */
+      /* <div> */
+      createElement("div", {},
+        /* <label> */
+        createElement("label", {},
+          /* <input */
+          createElement("input", {
+            /* type="checkbox" */
+            type: "checkbox",
+            /* checked={usingLastSeen} */
+            checked: usingLastSeen,
+            /* onChange={...} */
+            onChange: (e) => {
+              setStorage("fediconnect_use_last_seen", `${e.target.checked}`);
+            },
+          }),
+          /* /> */
+          "日付フィルタを使う"
+        ),
+        /* </label> */
+      ),
+      /* </div> */
+      /* <div> */
+      createElement("div", {},
+        "日付:",
+        /* <input */
+        createElement("input", {
+          /* type="datetime-local" */
+          type: "datetime-local",
+          /* disabled={!usingLastSeen} */
+          disabled: !usingLastSeen,
+          /* value={lastSeen} */
+          value: lastSeen.replace(/(?<=T\d{2}:\d{2}):\d{2}(\.\d+)?Z$/, ""),
+          /* onChange={...} */
+          onChange: (e) => {
+            setStorage("fediconnect_last_seen", `${e.target.value}:00.000Z`);
+          },
+        }),
+        /* /> */
+        "UTC",
+      ),
+      /* </div> */
+    )
+    /* </details> */
+  );
+};
 
 const useStorage = (name) => {
   function subscribe(callback) {
