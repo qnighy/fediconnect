@@ -52,11 +52,19 @@ const DEFAULT_CONDITIONS = {
 function generateSearchURL(options = {}) {
   const { queryBase, contentConditions } = options;
 
-  const searchQuery = `${queryBase} ${Object.keys(contentConditions).filter((condition) => contentConditions[condition]).join(" OR ")}`;
+  const searchQuery = `${queryBase} ${Object.keys(contentConditions).filter((condition) => contentConditions[condition]).map((query) => workaroundBlockedTLD(query)).join(" OR ")}`;
 
   const url = new URL("https://twitter.com/search");
   url.searchParams.set("q", searchQuery);
   return url.toString();
+}
+
+function workaroundBlockedTLD(query) {
+  const m = /^url:(.*)\.net$/.exec(query);
+  if (m) {
+    return `url:"${m[1]} net"`;
+  }
+  return query;
 }
 
 const App = () => {
