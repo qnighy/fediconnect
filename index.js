@@ -43,6 +43,7 @@ const DEFAULT_CONDITIONS = {
   "Bluesky": false,
   "url:bsky.app": false,
   "Nostr": false,
+  "url:snort.social": false,
   "url:nostr.directory": false,
   "url:damus.io": false,
   "npub": false,
