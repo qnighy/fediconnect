@@ -44,3 +44,7 @@ ul.lists, ul.conditions {
   padding: 0;
   margin: 0;
 }
+
+form.edit-list {
+  display: inline-block;
+}

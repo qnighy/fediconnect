@@ -107,6 +107,22 @@ const QueryBaseSelector = (props) => {
     setStorage("lists", JSON.stringify(newLists));
   }
 
+  function removeList(id) {
+    const newLists = { ...lists };
+    delete newLists[id];
+    setStorage("lists", JSON.stringify(newLists));
+    if (`list:${id}` === queryBase) {
+      setQueryBase("filter:follows");
+    }
+  }
+
+  function setListName(id, name) {
+    setStorage("lists", JSON.stringify({
+      ...lists,
+      [id]: name,
+    }));
+  }
+
   return (
     /* <details> */
     createElement("details", {},
@@ -117,51 +133,50 @@ const QueryBaseSelector = (props) => {
       /* </summary> */
       /* <ul className="lists"> */
       createElement("ul", { className: "lists" },
-        ...queryBaseCandidates.map((candidate) =>
-          /* <li key={candidate}> */
-          createElement("li", { key: candidate },
-            /* <label> */
-            createElement("label", {},
-              /* <input */
-              createElement("input", {
-                /* type="radio" */
-                type: "radio",
-                /* name="queryBase" */
-                name: "queryBase",
-                /* value={candidate} */
-                value: candidate,
-                /* checked={candidate === queryBase} */
-                checked: candidate === queryBase,
-                /* onChange={... */
-                onChange: (event) => {
-                  setQueryBase(event.target.value);
-                }
-                /* } */
-              }),
-              /* /> */
-              candidate === "filter:follows" ? "フォロー中のユーザーから検索" :
-              candidate.startsWith("list:") ? lists[candidate.slice(5)] ?? `リスト (id: ${candidate.slice(5)})` :
-              candidate
-            ),
-            /* </label> */
-            candidate.startsWith("list:") ? /* <button */
-              createElement("button", {
-                /* type="button" */
-                type: "button",
-                /* onClick={...} */
-                onClick: () => {
-                  const newLists = { ...lists };
-                  delete newLists[candidate.slice(5)];
-                  setStorage("lists", JSON.stringify(newLists));
-                  if (candidate === queryBase) {
-                    setQueryBase("filter:follows");
-                  }
-                }
-              },
-                "削除"
-              )
-              /* </button> */
-              : null
+        /* <li key="filter:follows"> */
+        createElement("li", { key: "filter:follows" },
+          /* <label> */
+          createElement("label", {},
+            /* <input */
+            createElement("input", {
+              /* type="radio" */
+              type: "radio",
+              /* name="queryBase" */
+              name: "queryBase",
+              /* value="filter:follows" */
+              value: "filter:follows",
+              /* checked={"filter:follows" === queryBase} */
+              checked: "filter:follows" === queryBase,
+              /* onChange={... */
+              onChange: (event) => {
+                setQueryBase(event.target.value);
+              }
+              /* } */
+            }),
+            /* /> */
+            "フォロー中のユーザーから検索"
+          ),
+          /* </label> */
+        ),
+        /* </li> */
+        ...Object.entries(lists).map(([id, name]) =>
+          /* <li key={`list:${id}`}> */
+          createElement("li", { key: `list:${id}` },
+            /* <ListLine */
+            createElement(ListLine, {
+              /* id={id} */
+              id,
+              /* name={name} */
+              name,
+              /* queryBase={queryBase} */
+              queryBase,
+              /* setQueryBase={setQueryBase} */
+              setQueryBase,
+              /* removeList={removeList} */
+              removeList,
+              /* setListName={setListName} */
+              setListName,
+            })
           ),
           /* </li> */
         )
@@ -217,6 +232,107 @@ const QueryBaseSelector = (props) => {
         /* </button> */
     )
     /* </details> */
+  );
+};
+
+const ListLine = (props) => {
+  const { id, name, queryBase, setQueryBase, removeList, setListName } = props;
+  const [editName, setEditName] = useState(null);
+  const radio = (
+    /* <input */
+    createElement("input", {
+      /* type="radio" */
+      type: "radio",
+      /* name="queryBase" */
+      name: "queryBase",
+      /* value={`list:${id}`} */
+      value: `list:${id}`,
+      /* checked={`list:${id}` === queryBase} */
+      checked: `list:${id}` === queryBase,
+      /* onChange={... */
+      onChange: (event) => {
+        setQueryBase(event.target.value);
+      }
+      /* } */
+    })
+    /* /> */
+  );
+  return (
+    editName != null
+    ? /* <> */
+      createElement(Fragment, {},
+        radio,
+        /* <form className="edit-list"> */
+        createElement("form", { className: "edit-list" },
+          /* <input */
+          createElement("input", {
+            /* type="text" */
+            type: "text",
+            /* value={editName} */
+            value: editName,
+            /* onChange={...} */
+            onChange: (e) => {
+              setEditName(e.target.value);
+            },
+          }),
+          /* /> */
+          /* <button */
+          createElement("button", {
+            /* type="submit" */
+            type: "submit",
+            /* disabled={!editName} */
+            disabled: !editName,
+            /* onClick={...} */
+            onClick: (e) => {
+              e.preventDefault();
+              setListName(id, editName);
+              setEditName(null);
+            }
+          },
+            "保存"
+          ),
+          /* </button> */
+          /* <button type="button" onClick={() => setEditName(null)}> */
+          createElement("button", { type: "button", onClick: () => setEditName(null) },
+            "キャンセル"
+          ),
+          /* </button> */
+        )
+        /* </form> */
+      )
+      /* </> */
+    : /* <> */
+      createElement(Fragment, {},
+        /* <label> */
+        createElement("label", {},
+          radio,
+          name
+        ),
+        /* </label> */
+        /* <button type="button" onClick={() => setEditName(name)}> */
+        createElement("button", { type: "button", onClick: () => setEditName(name) },
+          "編集"
+        ),
+        /* </button> */
+        /* <button */
+        createElement("button", {
+          /* type="button" */
+          type: "button",
+          /* onClick={...} */
+          onClick: () => {
+            removeList(id);
+          }
+        },
+          "削除"
+        ),
+        /* </button> */
+        /* <a href={`https://twitter.com/i/lists/${id}`} target="_blank" rel="noopener noreferrer"> */
+        createElement("a", { href: `https://twitter.com/i/lists/${id}`, target: "_blank", rel: "noopener noreferrer" },
+          "開く"
+        ),
+        /* </a> */
+      )
+      /* </> */
   );
 };
 
