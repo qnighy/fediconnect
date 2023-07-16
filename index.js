@@ -72,7 +72,7 @@ const App = () => {
   const conditionsJson = useStorage("conditions");
   const contentConditions = parseConditions(conditionsJson);
   const usingLastSeen = useStorage("fediconnect_use_last_seen") === "true";
-  const lastSeen = useStorage("fediconnect_last_seen") ?? new Date(Number(new Date()) - 366 * 24 * 60 * 60 * 1000).toISOString();
+  const lastSeen = useStorage("fediconnect_last_seen") ?? new Date().toISOString();
   const searchURL = generateSearchURL({
     baseQueries: [
       queryBase,
@@ -569,7 +569,7 @@ const LastSeenSelector = (props) => {
           },
         }),
         /* /> */
-        "UTC",
+        "UTC (※時差注意) 以降のツイートのみ検索",
       ),
       /* </div> */
     )
