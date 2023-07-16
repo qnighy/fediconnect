@@ -2,6 +2,24 @@ h1 .subtitle {
   font-size: 0.5em;
 }
 
+a.share {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5em;
+
+  border: 1px solid gray;
+  background-color: #496feb;
+  border-radius: 2px;
+
+  text-decoration: none;
+  font-weight: bold;
+  color: white;
+}
+a.share:hover {
+  background-color: #042cb2;
+}
+
 a.search {
   display: inline-flex;
   align-items: center;
