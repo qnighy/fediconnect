@@ -39,7 +39,7 @@ a.search:hover {
   background-color: #042cb2;
 }
 
-ul.lists, ul.conditions {
+ul.lists, ul.conditions, ul.condition-wise-buttons {
   list-style-type: none;
   padding: 0;
   margin: 0;

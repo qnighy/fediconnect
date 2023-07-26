@@ -50,9 +50,9 @@ const DEFAULT_CONDITIONS = {
 };
 
 function generateSearchURL(options = {}) {
-  const { baseQueries, contentConditions } = options;
+  const { baseQueries, enabledContentConditions } = options;
 
-  const searchQuery = `${baseQueries.join(" ")} ${Object.keys(contentConditions).filter((condition) => contentConditions[condition]).map((query) => workaroundBlockedTLD(query)).join(" OR ")}`;
+  const searchQuery = `${baseQueries.join(" ")} ${enabledContentConditions.map((query) => workaroundBlockedTLD(query)).join(" OR ")}`;
 
   const url = new URL("https://twitter.com/search");
   url.searchParams.set("q", searchQuery);
@@ -71,14 +71,16 @@ const App = () => {
   const [queryBase, setQueryBase] = useState("filter:follows");
   const conditionsJson = useStorage("conditions");
   const contentConditions = parseConditions(conditionsJson);
+  const enabledContentConditions = Object.keys(contentConditions).filter((condition) => contentConditions[condition]);
   const usingLastSeen = useStorage("fediconnect_use_last_seen") === "true";
   const lastSeen = useStorage("fediconnect_last_seen") ?? new Date().toISOString();
+  const baseQueries = [
+    queryBase,
+    usingLastSeen ? `since:${lastSeen.replace("T", "_").replace(/\.\d+/, "").replace(/Z$/, "_UTC")}` : null,
+  ].filter(Boolean);
   const searchURL = generateSearchURL({
-    baseQueries: [
-      queryBase,
-      usingLastSeen ? `since:${lastSeen.replace("T", "_").replace(/\.\d+/, "").replace(/Z$/, "_UTC")}` : null,
-    ].filter(Boolean),
-    contentConditions,
+    baseQueries,
+    enabledContentConditions,
   });
   const [searchTimestamp, setSearchTimestamp] = useState(null);
   return (
@@ -128,8 +130,66 @@ const App = () => {
           )
           /* </button> */
         : null,
-      )
+      ),
       /* </div> */
+      /* <details> */
+      createElement("details", {},
+        /* <summary> */
+        createElement("summary", {},
+          "ORを使わない検索"
+        ),
+        /* </summary> */
+        /* <ul> */
+        createElement("ul", { className: "condition-wise-buttons" },
+          enabledContentConditions.map((singleContentCondition) =>
+            /* <li key={singleContentCondition}> */
+            createElement("li", { key: singleContentCondition },
+              /* <a> */
+              createElement("a", {
+                /* className="search" */
+                className: "search",
+                /* href={searchURL} */
+                href: generateSearchURL({
+                  baseQueries,
+                  enabledContentConditions: [singleContentCondition],
+                }),
+                /* target="_blank" */
+                target: "_blank",
+                /* rel="noopener noreferrer" */
+                rel: "noopener noreferrer",
+                onClick: () => {
+                  if (searchTimestamp == null) {
+                    setSearchTimestamp(new Date().toISOString());
+                  }
+                }
+              },
+                `🔍 ${singleContentCondition} を検索`
+              ),
+              /* </a> */
+            )
+            /* </li> */
+          )
+        ),
+        /* </ul> */
+        // Show a button to set the last seen date to the current time.
+        searchTimestamp != null
+        ? /* <button */
+          createElement("button", {
+            /* type="button" */
+            type: "button",
+            /* onClick={...} */
+            onClick: () => {
+              setStorage("fediconnect_use_last_seen", "true");
+              setStorage("fediconnect_last_seen", searchTimestamp);
+              setSearchTimestamp(null);
+            }
+          },
+            "日付をフィルタに記録"
+          )
+          /* </button> */
+        : null,
+      )
+      /* </details> */
     )
     /* </> */
   );
