@@ -1,6 +1,10 @@
 import { createElement, useEffect, useState, useSyncExternalStore, Fragment } from "https://jspm.dev/react";
 import { createRoot } from "https://jspm.dev/react-dom/client";
 
+// https://twitter.com/elecom_pr/status/1684060794714218496
+const OR_DELIMITER = " ｜ ";
+// const OR_DELIMITER = " OR ";
+
 const DEFAULT_CONDITIONS = {
   "Mastodon": false,
   "url:mastodon": true,
@@ -52,7 +56,7 @@ const DEFAULT_CONDITIONS = {
 function generateSearchURL(options = {}) {
   const { baseQueries, enabledContentConditions } = options;
 
-  const searchQuery = `${baseQueries.join(" ")} ${enabledContentConditions.map((query) => workaroundBlockedTLD(query)).join(" OR ")}`;
+  const searchQuery = `${baseQueries.join(" ")} ${enabledContentConditions.map((query) => workaroundBlockedTLD(query)).join(OR_DELIMITER)}`;
 
   const url = new URL("https://twitter.com/search");
   url.searchParams.set("q", searchQuery);
